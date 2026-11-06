@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -5,23 +6,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className="min-h-screen bg-base-100">
-      <nav className="navbar bg-base-100 shadow-md px-6">
-        <div className="flex-1">
-          <Link href="/" className="text-2xl font-bold text-primary">
-            📚 BookNook
-          </Link>
-        </div>
-
-        <div className="flex gap-3">
-          <Link href="/login" className="btn btn-ghost">
-            Login
-          </Link>
-          <Link href="/register" className="btn btn-primary">
-            Register
-          </Link>
-        </div>
-      </nav>
-
+      {/* Hero Section */}
       <section className="hero min-h-[75vh] bg-base-200">
         <div className="hero-content flex-col lg:flex-row-reverse gap-12">
           <div className="text-8xl">📚</div>
@@ -47,8 +32,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Features Section */}
       <section className="py-16 px-6 text-center">
-        <h2 className="text-3xl font-bold mb-10">Why Choose BookNook?</h2>
+        <h2 className="text-3xl font-bold mb-10">
+          Why Choose BookNook?
+        </h2>
 
         <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
           <div className="card bg-base-200 shadow-md p-6">
@@ -71,6 +59,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="footer footer-center bg-neutral text-neutral-content p-6">
         <p>Copyright © 2026 BookNook. All rights reserved.</p>
       </footer>
