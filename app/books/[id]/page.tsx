@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -14,7 +14,9 @@ interface Book {
   addedBy: string;
 }
 
-export default function BookDetailsPage() {
+const API_URL = "https://booknook-server-n74t.onrender.com";
+
+function BookDetailsContent() {
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
@@ -37,7 +39,7 @@ export default function BookDetailsPage() {
         }
 
         const response = await fetch(
-          `http://localhost:5000/books/${bookId}`,
+          `${API_URL}/books/${bookId}`,
           {
             headers: {
               Authorization: `Bearer ${data.token}`,
@@ -88,7 +90,7 @@ export default function BookDetailsPage() {
         throw new Error("Please login first.");
       }
 
-      const response = await fetch("http://localhost:5000/borrows", {
+      const response = await fetch(`${API_URL}/borrows`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -142,7 +144,7 @@ export default function BookDetailsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/books/${currentBook._id}`,
+        `${API_URL}/books/${currentBook._id}`,
         {
           method: "DELETE",
           headers: {
@@ -263,5 +265,19 @@ export default function BookDetailsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function BookDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center py-20">
+          Loading...
+        </div>
+      }
+    >
+      <BookDetailsContent />
+    </Suspense>
   );
 }

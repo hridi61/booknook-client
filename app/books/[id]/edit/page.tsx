@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -13,7 +13,9 @@ interface Book {
   addedBy: string;
 }
 
-export default function EditBookPage() {
+const API_URL = "https://booknook-server-n74t.onrender.com";
+
+function EditBookContent() {
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
@@ -35,7 +37,7 @@ export default function EditBookPage() {
         }
 
         const response = await fetch(
-          `http://localhost:5000/books/${bookId}`,
+          `${API_URL}/books/${bookId}`,
           {
             headers: {
               Authorization: `Bearer ${data.token}`,
@@ -96,7 +98,7 @@ export default function EditBookPage() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/books/${bookId}`,
+        `${API_URL}/books/${bookId}`,
         {
           method: "PATCH",
           headers: {
@@ -217,5 +219,19 @@ export default function EditBookPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function EditBookPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center py-20">
+          Loading...
+        </div>
+      }
+    >
+      <EditBookContent />
+    </Suspense>
   );
 }

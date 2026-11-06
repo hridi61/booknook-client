@@ -20,7 +20,9 @@ export default function BooksPage() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch("http://localhost:5000/books");
+        const response = await fetch(
+          "https://booknook-server-n74t.onrender.com/books"
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch books");
@@ -41,7 +43,6 @@ export default function BooksPage() {
   return (
     <main className="min-h-screen bg-base-200 px-6 py-12">
       <div className="max-w-6xl mx-auto">
-
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-primary">
             All Books
@@ -59,9 +60,7 @@ export default function BooksPage() {
         )}
 
         {error && (
-          <p className="text-center text-error py-10">
-            {error}
-          </p>
+          <p className="text-center text-error py-10">{error}</p>
         )}
 
         {!loading && !error && books.length === 0 && (
@@ -101,9 +100,7 @@ export default function BooksPage() {
 
                     <p className="mt-3">
                       Available Copies:{" "}
-                      <span className="font-bold">
-                        {book.copies}
-                      </span>
+                      <span className="font-bold">{book.copies}</span>
                     </p>
 
                     <p className="text-sm text-base-content/60">
@@ -124,7 +121,6 @@ export default function BooksPage() {
             </div>
           </>
         )}
-
       </div>
     </main>
   );
