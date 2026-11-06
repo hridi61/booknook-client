@@ -26,6 +26,7 @@ export default function BookDetailsPage() {
   const [error, setError] = useState("");
   const [borrowing, setBorrowing] = useState(false);
 
+  // Fetch Book Details
   useEffect(() => {
     const fetchBook = async () => {
       try {
@@ -71,7 +72,9 @@ export default function BookDetailsPage() {
 
   // Borrow Book
   const handleBorrow = async () => {
-    if (!book || book.copies <= 0) {
+    const currentBook = book;
+
+    if (!currentBook || currentBook.copies <= 0) {
       alert("No copies available.");
       return;
     }
@@ -92,7 +95,7 @@ export default function BookDetailsPage() {
           Authorization: `Bearer ${data.token}`,
         },
         body: JSON.stringify({
-          bookId: book._id,
+          bookId: currentBook._id,
         }),
       });
 
@@ -103,8 +106,8 @@ export default function BookDetailsPage() {
       }
 
       setBook({
-        ...book,
-        copies: book.copies - 1,
+        ...currentBook,
+        copies: currentBook.copies - 1,
       });
 
       alert("Book borrowed successfully!");
@@ -121,6 +124,10 @@ export default function BookDetailsPage() {
 
   // Delete Book
   const handleDelete = async () => {
+    const currentBook = book;
+
+    if (!currentBook) return;
+
     const confirmed = window.confirm(
       "Are you sure you want to delete this book?"
     );
@@ -135,7 +142,7 @@ export default function BookDetailsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/books/${book._id}`,
+        `http://localhost:5000/books/${currentBook._id}`,
         {
           method: "DELETE",
           headers: {
