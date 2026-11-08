@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
+const API_URL = "https://booknook-server-n74t.onrender.com";
+
 interface Borrow {
   _id: string;
   bookId: string;
@@ -21,13 +23,15 @@ export default function MyBorrowsPage() {
 
   const fetchBorrows = async () => {
     try {
+      setError("");
+
       const { data, error: tokenError } = await authClient.token();
 
       if (tokenError || !data?.token) {
         throw new Error("Please login first.");
       }
 
-      const response = await fetch("http://localhost:5000/borrows", {
+      const response = await fetch(`${API_URL}/borrows`, {
         headers: {
           Authorization: `Bearer ${data.token}`,
         },
@@ -36,7 +40,9 @@ export default function MyBorrowsPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to load borrowed books.");
+        throw new Error(
+          result.message || "Failed to load borrowed books."
+        );
       }
 
       setBorrows(result);
@@ -72,7 +78,7 @@ export default function MyBorrowsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/borrows/${borrowId}`,
+        `${API_URL}/borrows/${borrowId}`,
         {
           method: "DELETE",
           headers: {
@@ -84,7 +90,9 @@ export default function MyBorrowsPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to return book.");
+        throw new Error(
+          result.message || "Failed to return book."
+        );
       }
 
       setBorrows((previous) =>
@@ -167,7 +175,8 @@ export default function MyBorrowsPage() {
                   </h2>
 
                   <p>
-                    <strong>Borrowed By:</strong> {borrow.borrowedBy}
+                    <strong>Borrowed By:</strong>{" "}
+                    {borrow.borrowedBy}
                   </p>
 
                   <p>
