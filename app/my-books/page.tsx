@@ -13,12 +13,15 @@ interface Book {
   addedBy: string;
 }
 
+const API_URL = "https://booknook-server-n74t.onrender.com";
+
 export default function MyBooksPage() {
   const { data: session, isPending } = authClient.useSession();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
     const fetchMyBooks = async () => {
@@ -29,7 +32,7 @@ export default function MyBooksPage() {
           throw new Error("Please login first.");
         }
 
-        const response = await fetch("http://localhost:5000/books", {
+        const response = await fetch(`${API_URL}/books`, {
           headers: {
             Authorization: `Bearer ${data.token}`,
           },
@@ -48,9 +51,7 @@ export default function MyBooksPage() {
         setBooks(myBooks);
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load your books."
+          err instanceof Error ? err.message : "Unable to load your books."
         );
       } finally {
         setLoading(false);
@@ -64,6 +65,47 @@ export default function MyBooksPage() {
       setLoading(false);
     }
   }, [isPending, session?.user?.email]);
+
+  const handleDelete = async (bookId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this book?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(bookId);
+
+      const { data, error: tokenError } = await authClient.token();
+
+      if (tokenError || !data?.token) {
+        throw new Error("Please login first.");
+      }
+
+      const response = await fetch(`${API_URL}/books/${bookId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to delete book.");
+      }
+
+      setBooks((previousBooks) =>
+        previousBooks.filter((book) => book._id !== bookId)
+      );
+
+      alert("Book deleted successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Unable to delete book.");
+    } finally {
+      setDeletingId("");
+    }
+  };
 
   if (isPending || loading) {
     return (
@@ -104,11 +146,7 @@ export default function MyBooksPage() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body text-center">
               <div className="text-6xl">📚</div>
-
-              <h2 className="text-2xl font-bold">
-                No Books Added Yet
-              </h2>
-
+              <h2 className="text-2xl font-bold">No Books Added Yet</h2>
               <p>You have not added any books.</p>
 
               <div className="card-actions justify-center mt-4">
@@ -121,10 +159,7 @@ export default function MyBooksPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {books.map((book) => (
-              <div
-                key={book._id}
-                className="card bg-base-100 shadow-xl"
-              >
+              <div key={book._id} className="card bg-base-100 shadow-xl">
                 <div className="card-body">
                   <div className="text-5xl text-center">📖</div>
 
@@ -154,6 +189,14 @@ export default function MyBooksPage() {
                     >
                       Edit Book
                     </Link>
+
+                    <button
+                      onClick={() => handleDelete(book._id)}
+                      disabled={deletingId === book._id}
+                      className="btn btn-error"
+                    >
+                      {deletingId === book._id ? "Deleting..." : "Delete Book"}
+                    </button>
                   </div>
                 </div>
               </div>
