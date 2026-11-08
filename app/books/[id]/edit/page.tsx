@@ -26,6 +26,7 @@ function EditBookContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -36,14 +37,11 @@ function EditBookContent() {
           throw new Error("Please login again.");
         }
 
-        const response = await fetch(
-          `${API_URL}/books/${bookId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${data.token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/books/${bookId}`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
 
         const result = await response.json();
 
@@ -75,6 +73,7 @@ function EditBookContent() {
   ) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!title.trim() || !category.trim() || copies === "") {
       setError("Please fill in all fields.");
@@ -97,21 +96,18 @@ function EditBookContent() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `${API_URL}/books/${bookId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-          body: JSON.stringify({
-            title: title.trim(),
-            category: category.trim(),
-            copies: copiesNumber,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/books/${bookId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          category: category.trim(),
+          copies: copiesNumber,
+        }),
+      });
 
       const result = await response.json();
 
@@ -119,8 +115,12 @@ function EditBookContent() {
         throw new Error(result.message || "Failed to update book.");
       }
 
-      router.push(`/books/${bookId}`);
-      router.refresh();
+      setSuccess("Book updated successfully!");
+
+      setTimeout(() => {
+        router.push(`/books/${bookId}`);
+        router.refresh();
+      }, 1500);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong."
@@ -149,7 +149,15 @@ function EditBookContent() {
             </h1>
 
             {error && (
-              <p className="text-error text-center">{error}</p>
+              <p className="text-error text-center font-semibold">
+                {error}
+              </p>
+            )}
+
+            {success && (
+              <p className="text-success text-center font-semibold">
+                {success}
+              </p>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -201,7 +209,7 @@ function EditBookContent() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={saving}
+                  disabled={saving || !!success}
                 >
                   {saving ? "Updating..." : "Update Book"}
                 </button>
@@ -209,6 +217,7 @@ function EditBookContent() {
                 <button
                   type="button"
                   className="btn btn-outline"
+                  disabled={saving}
                   onClick={() => router.push(`/books/${bookId}`)}
                 >
                   Cancel
