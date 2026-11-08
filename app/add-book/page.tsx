@@ -45,7 +45,7 @@ export default function AddBookPage() {
       }
 
       // Send book information to Backend
-      const response = await fetch("https://booknook-server-n74t.onrender.com/books", {", {
+      const response = await fetch("https://booknook-server-n74t.onrender.com/books", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
