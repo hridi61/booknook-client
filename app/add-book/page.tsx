@@ -38,11 +38,15 @@ export default function AddBookPage() {
 
     try {
       // Get JWT token from Better Auth
+      setError("Getting authentication token...");
+
       const { data, error: tokenError } = await authClient.token();
 
       if (tokenError || !data?.token) {
         throw new Error("Please login first to add a book.");
       }
+
+      setError("Sending book data to server...");
 
       // Send book information to Backend
       const response = await fetch("https://booknook-server-n74t.onrender.com/books", {
