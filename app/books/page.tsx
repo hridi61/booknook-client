@@ -39,15 +39,21 @@ export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [category, setCategory] = useState("");
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const category = new URLSearchParams(window.location.search).get("category");
-        const query = category
-          ? `?sort=newest&category=${encodeURIComponent(category)}`
+        // Read ?category=Fiction from the page URL
+        const selected =
+          new URLSearchParams(window.location.search).get("category") ?? "";
+        setCategory(selected);
+
+        const query = selected
+          ? `?sort=newest&category=${encodeURIComponent(selected)}`
           : "?sort=newest";
-        const response = await fetch(`${API_URL}/books${query}`);  
+
+        const response = await fetch(`${API_URL}/books${query}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch books");
@@ -69,10 +75,18 @@ export default function BooksPage() {
     <main className="min-h-screen bg-base-200 px-6 py-12">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-primary">All Books</h1>
+          <h1 className="text-4xl font-bold text-primary">
+            {category ? `${category} Books` : "All Books"}
+          </h1>
           <p className="mt-3 text-base-content/70">
             Discover and explore books from our community.
           </p>
+
+          {category && (
+            <Link href="/books" className="btn btn-outline btn-sm mt-4">
+              Show all books
+            </Link>
+          )}
         </div>
 
         {loading && (
@@ -92,7 +106,9 @@ export default function BooksPage() {
             <div className="text-6xl mb-4">📚</div>
             <h2 className="text-2xl font-bold">No Books Available</h2>
             <p className="mt-3 text-base-content/70">
-              No books have been added yet. Please check back later.
+              {category
+                ? `No ${category} books yet. Try another category.`
+                : "No books have been added yet. Please check back later."}
             </p>
           </div>
         )}

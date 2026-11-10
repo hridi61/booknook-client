@@ -202,7 +202,7 @@ function BookDetailsContent() {
             ) : (
               <div className="text-6xl text-center mb-4">📖</div>
             )}
-
+  
             <h1 className="text-3xl font-bold text-primary text-center">
               {book.title}
             </h1>
