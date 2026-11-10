@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
 const API_URL = "https://booknook-server-n74t.onrender.com";
@@ -11,8 +11,28 @@ interface Borrow {
   _id: string;
   bookId: string;
   bookTitle: string;
+  bookImage?: string;
   borrowedBy: string;
   borrowedAt: string;
+  returnDate?: string;
+}
+
+function BookCover({ src, title }: { src?: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return <div className="text-5xl text-center py-10">📖</div>;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={`Cover of ${title}`}
+      className="h-48 w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export default function MyBorrowsPage() {
@@ -40,17 +60,13 @@ export default function MyBorrowsPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to load borrowed books."
-        );
+        throw new Error(result.message || "Failed to load borrowed books.");
       }
 
       setBorrows(result);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load borrowed books."
+        err instanceof Error ? err.message : "Unable to load borrowed books."
       );
     } finally {
       setLoading(false);
@@ -77,35 +93,26 @@ export default function MyBorrowsPage() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `${API_URL}/borrows/${borrowId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${data.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/borrows/${borrowId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to return book."
-        );
+        throw new Error(result.message || "Failed to return book.");
       }
 
       setBorrows((previous) =>
         previous.filter((borrow) => borrow._id !== borrowId)
       );
 
-      alert("Book returned successfully!");
+      toast.success("Book returned successfully!");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setReturningId("");
     }
@@ -138,18 +145,14 @@ export default function MyBorrowsPage() {
           My Borrowed Books
         </h1>
 
-        <p className="text-center mb-8">
-          View and manage your borrowed books.
-        </p>
+        <p className="text-center mb-8">View and manage your borrowed books.</p>
 
         {borrows.length === 0 ? (
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body text-center">
               <div className="text-6xl">📚</div>
 
-              <h2 className="text-2xl font-bold">
-                No Borrowed Books
-              </h2>
+              <h2 className="text-2xl font-bold">No Borrowed Books</h2>
 
               <p>You have not borrowed any books yet.</p>
 
@@ -162,42 +165,62 @@ export default function MyBorrowsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {borrows.map((borrow) => (
-              <div
-                key={borrow._id}
-                className="card bg-base-100 shadow-xl"
-              >
-                <div className="card-body">
-                  <div className="text-5xl text-center">📖</div>
+            {borrows.map((borrow) => {
+              const overdue =
+                borrow.returnDate &&
+                new Date(borrow.returnDate).getTime() < Date.now();
 
-                  <h2 className="card-title justify-center text-primary">
-                    {borrow.bookTitle}
-                  </h2>
+              return (
+                <div
+                  key={borrow._id}
+                  className="card bg-base-100 shadow-xl overflow-hidden"
+                >
+                  <figure>
+                    <BookCover src={borrow.bookImage} title={borrow.bookTitle} />
+                  </figure>
 
-                  <p>
-                    <strong>Borrowed By:</strong>{" "}
-                    {borrow.borrowedBy}
-                  </p>
+                  <div className="card-body">
+                    <h2 className="card-title justify-center text-primary">
+                      {borrow.bookTitle}
+                    </h2>
 
-                  <p>
-                    <strong>Borrowed At:</strong>{" "}
-                    {new Date(borrow.borrowedAt).toLocaleDateString()}
-                  </p>
+                    <p>
+                      <strong>Borrowed On:</strong>{" "}
+                      {new Date(borrow.borrowedAt).toLocaleDateString()}
+                    </p>
 
-                  <div className="card-actions justify-center mt-4">
-                    <button
-                      className="btn btn-success"
-                      onClick={() => handleReturn(borrow._id)}
-                      disabled={returningId === borrow._id}
-                    >
-                      {returningId === borrow._id
-                        ? "Returning..."
-                        : "Return Book"}
-                    </button>
+                    {borrow.returnDate && (
+                      <p>
+                        <strong>Return By:</strong>{" "}
+                        {new Date(borrow.returnDate).toLocaleDateString()}{" "}
+                        {overdue && (
+                          <span className="badge badge-error">Overdue</span>
+                        )}
+                      </p>
+                    )}
+
+                    <div className="card-actions justify-center mt-4">
+                      <Link
+                        href={`/books/${borrow.bookId}`}
+                        className="btn btn-outline"
+                      >
+                        View Book
+                      </Link>
+
+                      <button
+                        className="btn btn-success"
+                        onClick={() => handleReturn(borrow._id)}
+                        disabled={returningId === borrow._id}
+                      >
+                        {returningId === borrow._id
+                          ? "Returning..."
+                          : "Return Book"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -1,17 +1,23 @@
-
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
 interface Book {
   _id: string;
   title: string;
+  author?: string;
   category: string;
+  description?: string;
+  coverImage?: string;
+  totalCopies?: number;
   copies: number;
   addedBy: string;
+  addedByName?: string;
+  createdAt?: string;
 }
 
 const API_URL = "https://booknook-server-n74t.onrender.com";
@@ -27,6 +33,7 @@ function BookDetailsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [borrowing, setBorrowing] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
   // Fetch Book Details
   useEffect(() => {
@@ -38,29 +45,22 @@ function BookDetailsContent() {
           throw new Error("Please login again.");
         }
 
-        const response = await fetch(
-          `${API_URL}/books/${bookId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${data.token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/books/${bookId}`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
 
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            result.message || "Failed to load book details."
-          );
+          throw new Error(result.message || "Failed to load book details.");
         }
 
         setBook(result);
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load book details."
+          err instanceof Error ? err.message : "Unable to load book details."
         );
       } finally {
         setLoading(false);
@@ -77,7 +77,7 @@ function BookDetailsContent() {
     const currentBook = book;
 
     if (!currentBook || currentBook.copies <= 0) {
-      alert("No copies available.");
+      toast.error("No copies available.");
       return;
     }
 
@@ -112,13 +112,9 @@ function BookDetailsContent() {
         copies: currentBook.copies - 1,
       });
 
-      alert("Book borrowed successfully!");
+      toast.success("Book borrowed successfully!");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setBorrowing(false);
     }
@@ -143,15 +139,12 @@ function BookDetailsContent() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(
-        `${API_URL}/books/${currentBook._id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${data.token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/books/${currentBook._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      });
 
       const result = await response.json();
 
@@ -159,14 +152,11 @@ function BookDetailsContent() {
         throw new Error(result.message || "Failed to delete book.");
       }
 
+      toast.success("Book deleted.");
       router.push("/books");
       router.refresh();
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
     }
   };
 
@@ -182,9 +172,7 @@ function BookDetailsContent() {
   if (error || !book) {
     return (
       <div className="text-center py-20">
-        <p className="text-error mb-4">
-          {error || "Book not found."}
-        </p>
+        <p className="text-error mb-4">{error || "Book not found."}</p>
 
         <Link href="/books" className="btn btn-primary">
           Back to All Books
@@ -194,17 +182,36 @@ function BookDetailsContent() {
   }
 
   const isOwner = session?.user?.email === book.addedBy;
+  const showImage = Boolean(book.coverImage) && !imageFailed;
 
   return (
     <main className="min-h-screen bg-base-200 px-6 py-12">
       <div className="max-w-2xl mx-auto">
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <div className="text-6xl text-center mb-4">📖</div>
+            {showImage ? (
+              <div className="flex justify-center mb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={book.coverImage}
+                  alt={`Cover of ${book.title}`}
+                  className="h-64 w-auto rounded-lg object-cover shadow"
+                  onError={() => setImageFailed(true)}
+                />
+              </div>
+            ) : (
+              <div className="text-6xl text-center mb-4">📖</div>
+            )}
 
             <h1 className="text-3xl font-bold text-primary text-center">
               {book.title}
             </h1>
+
+            {book.author && (
+              <p className="text-center text-base-content/70">
+                by {book.author}
+              </p>
+            )}
 
             <div className="divider" />
 
@@ -214,11 +221,24 @@ function BookDetailsContent() {
 
             <p>
               <strong>Available Copies:</strong> {book.copies}
+              {typeof book.totalCopies === "number" && ` of ${book.totalCopies}`}
             </p>
 
             <p>
-              <strong>Added By:</strong> {book.addedBy}
+              <strong>Added By:</strong>{" "}
+              {book.addedByName
+                ? `${book.addedByName} (${book.addedBy})`
+                : book.addedBy}
             </p>
+
+            {book.description && (
+              <div className="mt-2">
+                <strong>Description:</strong>
+                <p className="mt-1 whitespace-pre-line text-base-content/80">
+                  {book.description}
+                </p>
+              </div>
+            )}
 
             {/* Borrow Button */}
             {!isOwner && (
@@ -247,10 +267,7 @@ function BookDetailsContent() {
                   Edit Book
                 </Link>
 
-                <button
-                  className="btn btn-error"
-                  onClick={handleDelete}
-                >
+                <button className="btn btn-error" onClick={handleDelete}>
                   Delete Book
                 </button>
               </div>
@@ -271,11 +288,7 @@ function BookDetailsContent() {
 export default function BookDetailsPage() {
   return (
     <Suspense
-      fallback={
-        <div className="text-center py-20">
-          Loading...
-        </div>
-      }
+      fallback={<div className="text-center py-20">Loading...</div>}
     >
       <BookDetailsContent />
     </Suspense>

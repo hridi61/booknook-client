@@ -1,19 +1,40 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
 interface Book {
   _id: string;
   title: string;
+  author?: string;
   category: string;
+  coverImage?: string;
+  totalCopies?: number;
   copies: number;
   addedBy: string;
 }
 
 const API_URL = "https://booknook-server-n74t.onrender.com";
+
+function BookCover({ src, title }: { src?: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
+    return <div className="text-5xl text-center py-10">📖</div>;
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={`Cover of ${title}`}
+      className="h-48 w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export default function MyBooksPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -26,17 +47,16 @@ export default function MyBooksPage() {
   useEffect(() => {
     const fetchMyBooks = async () => {
       try {
-        const { data, error: tokenError } = await authClient.token();
+        const email = session?.user?.email;
 
-        if (tokenError || !data?.token) {
+        if (!email) {
           throw new Error("Please login first.");
         }
 
-        const response = await fetch(`${API_URL}/books`, {
-          headers: {
-            Authorization: `Bearer ${data.token}`,
-          },
-        });
+        // The server filters by the addedBy query parameter
+        const response = await fetch(
+          `${API_URL}/books?addedBy=${encodeURIComponent(email)}&sort=newest`
+        );
 
         const result = await response.json();
 
@@ -44,11 +64,7 @@ export default function MyBooksPage() {
           throw new Error(result.message || "Failed to load books.");
         }
 
-        const myBooks = result.filter(
-          (book: Book) => book.addedBy === session?.user?.email
-        );
-
-        setBooks(myBooks);
+        setBooks(result);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Unable to load your books."
@@ -99,9 +115,9 @@ export default function MyBooksPage() {
         previousBooks.filter((book) => book._id !== bookId)
       );
 
-      alert("Book deleted successfully!");
+      toast.success("Book deleted successfully!");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Unable to delete book.");
+      toast.error(err instanceof Error ? err.message : "Unable to delete book.");
     } finally {
       setDeletingId("");
     }
@@ -159,13 +175,24 @@ export default function MyBooksPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {books.map((book) => (
-              <div key={book._id} className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                  <div className="text-5xl text-center">📖</div>
+              <div
+                key={book._id}
+                className="card bg-base-100 shadow-xl overflow-hidden"
+              >
+                <figure>
+                  <BookCover src={book.coverImage} title={book.title} />
+                </figure>
 
+                <div className="card-body">
                   <h2 className="card-title justify-center text-primary">
                     {book.title}
                   </h2>
+
+                  {book.author && (
+                    <p className="text-center text-base-content/70">
+                      by {book.author}
+                    </p>
+                  )}
 
                   <p>
                     <strong>Category:</strong> {book.category}
@@ -173,6 +200,8 @@ export default function MyBooksPage() {
 
                   <p>
                     <strong>Available Copies:</strong> {book.copies}
+                    {typeof book.totalCopies === "number" &&
+                      ` of ${book.totalCopies}`}
                   </p>
 
                   <div className="card-actions justify-center mt-4">
