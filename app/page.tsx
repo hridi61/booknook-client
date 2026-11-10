@@ -36,6 +36,30 @@ const slides = [
 
 const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
+const steps = [
+  {
+    icon: "🔍",
+    title: "Find a book",
+    text: "Explore books from different categories.",
+    button: "Browse Books",
+    href: "/books",
+  },
+  {
+    icon: "📚",
+    title: "Borrow it",
+    text: "Borrow your favorite book with ease.",
+    button: "Borrow a Book",
+    href: "/books",
+  },
+  {
+    icon: "↩️",
+    title: "Return it",
+    text: "Return the book after reading.",
+    button: "My Borrows",
+    href: "/my-borrows",
+  },
+];
+
 function BookCover({ src, title }: { src?: string; title: string }) {
   const [failed, setFailed] = useState(false);
 
@@ -193,27 +217,18 @@ export default function Home() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="card bg-base-200 p-6 text-center">
-            <div className="text-4xl mb-3">🔍</div>
-            <h3 className="text-xl font-semibold">Find a book</h3>
-            <p className="text-gray-500 mt-2">
-              Explore books from different categories.
-            </p>
-          </div>
-
-          <div className="card bg-base-200 p-6 text-center">
-            <div className="text-4xl mb-3">📚</div>
-            <h3 className="text-xl font-semibold">Borrow it</h3>
-            <p className="text-gray-500 mt-2">
-              Borrow your favorite book with ease.
-            </p>
-          </div>
-
-          <div className="card bg-base-200 p-6 text-center">
-            <div className="text-4xl mb-3">↩️</div>
-            <h3 className="text-xl font-semibold">Return it</h3>
-            <p className="text-gray-500 mt-2">Return the book after reading.</p>
-          </div>
+          {steps.map((step) => (
+            <Link
+              key={step.title}
+              href={step.href}
+              className="card bg-base-200 p-6 text-center hover:shadow-lg transition"
+            >
+              <div className="text-4xl mb-3">{step.icon}</div>
+              <h3 className="text-xl font-semibold">{step.title}</h3>
+              <p className="text-gray-500 mt-2">{step.text}</p>
+              <span className="btn btn-outline btn-sm mt-4">{step.button}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
