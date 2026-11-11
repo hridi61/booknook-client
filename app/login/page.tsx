@@ -1,18 +1,26 @@
-
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginContent() {
+  const params = useSearchParams();
+
+  // Private page theke ashle login er por sei page e fire jabe
+  const raw = params.get("redirect") || "/";
+  const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = "BookNook | Login";
+  }, []);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,26 +34,40 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError(error.message || "Login failed");
+        const message = error.message || "Invalid email or password";
+        setError(message);
+        toast.error(message);
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      toast.success("Welcome back!");
+      // Full reload: Navbar notun session dekhte pabe
+      window.location.href = redirect;
     } catch {
-      setError("Something went wrong. Please try again.");
+      const message = "Something went wrong. Please try again.";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogle = async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: redirect,
+      });
+    } catch {
+      toast.error("Google login failed. Please try again.");
+    }
+  };
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-base-200 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-10">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
-          <h1 className="text-3xl font-bold text-center">
-            Welcome Back!
-          </h1>
+          <h1 className="text-3xl font-bold text-center">Welcome Back!</h1>
 
           <p className="text-center text-base-content/60">
             Login to your BookNook account.
@@ -78,11 +100,18 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <div className="text-right mt-1">
+                <button
+                  type="button"
+                  className="link link-primary text-sm"
+                  onClick={() => toast("Password reset is coming soon")}
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
-            {error && (
-              <p className="text-error text-sm">{error}</p>
-            )}
+            {error && <p className="text-error text-sm">{error}</p>}
 
             <button
               type="submit"
@@ -93,8 +122,18 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <div className="divider">OR</div>
+
+          <button
+            type="button"
+            className="btn btn-outline w-full"
+            onClick={handleGoogle}
+          >
+            Continue with Google
+          </button>
+
           <p className="text-center mt-4">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/register" className="link link-primary">
               Register
             </Link>
@@ -102,5 +141,19 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-24">
+          <span className="loading loading-spinner loading-lg text-primary" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
