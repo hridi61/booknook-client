@@ -12,6 +12,13 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   database: mongodbAdapter(db, { client: mongoClient }),
 
+  // "Invalid origin" error er fix
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://booknook-client-lake.vercel.app",
+    "https://*.vercel.app",
+  ],
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
