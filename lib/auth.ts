@@ -32,6 +32,14 @@ export const auth = betterAuth({
     },
   },
 
+  // account_not_linked fix: same email e Google diye login korle link hobe
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
+
   rateLimit: {
     enabled: true,
     window: 60,
