@@ -79,7 +79,8 @@ export default function Navbar() {
             <div className="dropdown dropdown-end">
               <div tabIndex={0} role="button" className="avatar cursor-pointer">
                 <div className="w-10 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
-                  <img src={avatar} alt={user.name || "User"} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={avatar} alt={user.name || "User"} referrerPolicy="no-referrer" />
                 </div>
               </div>
               <ul tabIndex={0} className="menu dropdown-content z-10 mt-3 w-56 rounded-box border border-base-300 bg-base-100 p-2 shadow">
