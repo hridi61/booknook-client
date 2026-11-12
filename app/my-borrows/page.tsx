@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
+import PrivateRoute from "@/app/components/PrivateRoute";
 
 const API_URL = "https://booknook-server-n74t.onrender.com";
 
@@ -17,11 +18,11 @@ interface Borrow {
   returnDate?: string;
 }
 
-function BookCover({ src, title }: { src?: string; title: string }) {
+function Cover({ src, title }: { src?: string; title: string }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
-    return <div className="text-5xl text-center py-10">📖</div>;
+    return <div className="text-3xl w-12 text-center">📖</div>;
   }
 
   return (
@@ -29,63 +30,59 @@ function BookCover({ src, title }: { src?: string; title: string }) {
     <img
       src={src}
       alt={`Cover of ${title}`}
-      className="h-48 w-full object-cover"
+      className="h-16 w-12 rounded object-cover shadow"
       onError={() => setFailed(true)}
     />
   );
 }
 
-export default function MyBorrowsPage() {
+function MyBorrowsContent() {
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [returningId, setReturningId] = useState("");
-
-  const fetchBorrows = async () => {
-    try {
-      setError("");
-
-      const { data, error: tokenError } = await authClient.token();
-
-      if (tokenError || !data?.token) {
-        throw new Error("Please login first.");
-      }
-
-      const response = await fetch(`${API_URL}/borrows`, {
-        headers: {
-          Authorization: `Bearer ${data.token}`,
-        },
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to load borrowed books.");
-      }
-
-      setBorrows(result);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to load borrowed books."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [returnTarget, setReturnTarget] = useState<Borrow | null>(null);
+  const [returning, setReturning] = useState(false);
 
   useEffect(() => {
+    const fetchBorrows = async () => {
+      try {
+        const { data, error: tokenError } = await authClient.token();
+
+        if (tokenError || !data?.token) {
+          throw new Error("Please login first.");
+        }
+
+        const response = await fetch(`${API_URL}/borrows`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Failed to load borrowed books.");
+        }
+
+        setBorrows(result);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Unable to load borrowed books."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchBorrows();
   }, []);
 
-  const handleReturn = async (borrowId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to return this book?"
-    );
-
-    if (!confirmed) return;
+  // Confirm return (called from the modal)
+  const handleReturn = async () => {
+    if (!returnTarget) return;
 
     try {
-      setReturningId(borrowId);
+      setReturning(true);
 
       const { data, error: tokenError } = await authClient.token();
 
@@ -93,7 +90,7 @@ export default function MyBorrowsPage() {
         throw new Error("Please login again.");
       }
 
-      const response = await fetch(`${API_URL}/borrows/${borrowId}`, {
+      const response = await fetch(`${API_URL}/borrows/${returnTarget._id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${data.token}`,
@@ -107,14 +104,16 @@ export default function MyBorrowsPage() {
       }
 
       setBorrows((previous) =>
-        previous.filter((borrow) => borrow._id !== borrowId)
+        previous.filter((borrow) => borrow._id !== returnTarget._id)
       );
 
       toast.success("Book returned successfully!");
+      setReturnTarget(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
+      setReturnTarget(null);
     } finally {
-      setReturningId("");
+      setReturning(false);
     }
   };
 
@@ -123,6 +122,9 @@ export default function MyBorrowsPage() {
       <div className="text-center py-20">
         <span className="loading loading-spinner loading-lg text-primary" />
         <p className="mt-3">Loading your borrowed books...</p>
+        <p className="mt-1 text-sm text-base-content/60">
+          The first load can take up to a minute while the server wakes up.
+        </p>
       </div>
     );
   }
@@ -164,66 +166,128 @@ export default function MyBorrowsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {borrows.map((borrow) => {
-              const overdue =
-                borrow.returnDate &&
-                new Date(borrow.returnDate).getTime() < Date.now();
+          <div className="card bg-base-100 shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Book</th>
+                    <th>Borrowed On</th>
+                    <th>Return By</th>
+                    <th>Status</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
 
-              return (
-                <div
-                  key={borrow._id}
-                  className="card bg-base-100 shadow-xl overflow-hidden"
-                >
-                  <figure>
-                    <BookCover src={borrow.bookImage} title={borrow.bookTitle} />
-                  </figure>
+                <tbody>
+                  {borrows.map((borrow) => {
+                    const overdue =
+                      borrow.returnDate &&
+                      new Date(borrow.returnDate).getTime() < Date.now();
 
-                  <div className="card-body">
-                    <h2 className="card-title justify-center text-primary">
-                      {borrow.bookTitle}
-                    </h2>
+                    return (
+                      <tr key={borrow._id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <Cover
+                              src={borrow.bookImage}
+                              title={borrow.bookTitle}
+                            />
+                            <span className="font-semibold text-primary">
+                              {borrow.bookTitle}
+                            </span>
+                          </div>
+                        </td>
 
-                    <p>
-                      <strong>Borrowed On:</strong>{" "}
-                      {new Date(borrow.borrowedAt).toLocaleDateString()}
-                    </p>
+                        <td>
+                          {new Date(borrow.borrowedAt).toLocaleDateString()}
+                        </td>
 
-                    {borrow.returnDate && (
-                      <p>
-                        <strong>Return By:</strong>{" "}
-                        {new Date(borrow.returnDate).toLocaleDateString()}{" "}
-                        {overdue && (
-                          <span className="badge badge-error">Overdue</span>
-                        )}
-                      </p>
-                    )}
+                        <td>
+                          {borrow.returnDate
+                            ? new Date(borrow.returnDate).toLocaleDateString()
+                            : "N/A"}
+                        </td>
 
-                    <div className="card-actions justify-center mt-4">
-                      <Link
-                        href={`/books/${borrow.bookId}`}
-                        className="btn btn-outline"
-                      >
-                        View Book
-                      </Link>
+                        <td>
+                          {overdue ? (
+                            <span className="badge badge-error">Overdue</span>
+                          ) : (
+                            <span className="badge badge-success badge-soft">
+                              On time
+                            </span>
+                          )}
+                        </td>
 
-                      <button
-                        className="btn btn-success"
-                        onClick={() => handleReturn(borrow._id)}
-                        disabled={returningId === borrow._id}
-                      >
-                        {returningId === borrow._id
-                          ? "Returning..."
-                          : "Return Book"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                        <td>
+                          <div className="flex justify-end gap-2">
+                            <Link
+                              href={`/books/${borrow.bookId}`}
+                              className="btn btn-outline btn-sm"
+                            >
+                              View Book
+                            </Link>
+
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => setReturnTarget(borrow)}
+                            >
+                              Return Book
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Return confirmation modal */}
+      {returnTarget && (
+        <dialog className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-xl text-primary">Return this book?</h3>
+
+            <p className="mt-3">
+              You are returning <strong>{returnTarget.bookTitle}</strong>. It
+              will become available for other readers again.
+            </p>
+
+            <div className="modal-action">
+              <button
+                className="btn btn-outline"
+                onClick={() => setReturnTarget(null)}
+                disabled={returning}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={handleReturn}
+                disabled={returning}
+              >
+                {returning ? "Returning..." : "Yes, Return"}
+              </button>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop"
+            onClick={() => !returning && setReturnTarget(null)}
+          />
+        </dialog>
+      )}
     </main>
+  );
+}
+
+export default function MyBorrowsPage() {
+  return (
+    <PrivateRoute>
+      <MyBorrowsContent />
+    </PrivateRoute>
   );
 }
