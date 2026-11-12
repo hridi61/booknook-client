@@ -302,26 +302,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-base-300 bg-base-200 px-6 py-7">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          <div>
-            <h3 className="font-bold text-lg">BookNook</h3>
-            <p className="text-gray-500">A small online library for everyone.</p>
-          </div>
-
-          <div className="text-gray-500">
-            <p>hello@booknook.com</p>
-            <p>Dhaka, Bangladesh</p>
-          </div>
-
-          <div className="md:text-right text-gray-500">
-            <p>X &nbsp; Facebook &nbsp; Instagram</p>
-            <p>© 2026 BookNook</p>
-          </div>
-        </div>
-      </footer>
-    </main>
+      </main>
   );
 }
