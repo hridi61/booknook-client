@@ -19,8 +19,8 @@ This repository is the **client** (Next.js). The API server is in a separate rep
 
 | | |
 |---|---|
-| Email | `<demo email>` |
-| Password | `<demo password>` |
+| Email | `demo@booknook.com` |
+| Password | `Demo@1234` |
 
 You can also create your own account on the Register page.
 
