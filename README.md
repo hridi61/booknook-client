@@ -22,7 +22,7 @@ This repository is the **client** (Next.js). The API server is in a separate rep
 | Email | `demo@booknook.com` |
 | Password | `Demo@1234` |
 
-You can also create your own account on the Register page.
+You can also create your own account on the Register page, or use Google login.
 
 ## Features
 
@@ -34,7 +34,7 @@ You can also create your own account on the Register page.
 - **Edit Book** for title, author, category, description and cover image.
 - **My Borrows** table with borrowed date, return date, an Overdue or On time status, and a Return button with a confirmation modal.
 - **Profile** page with name, email and avatar.
-- **Authentication** with email and password (Better Auth). Private pages redirect logged-out users to Login and send them back after login.
+- **Authentication** with email and password and **Google login** (Better Auth). Private pages redirect logged-out users to Login and send them back after login.
 - Toast messages for every action, a custom **404 page**, and a layout that works on mobile.
 
 Only the owner of a book can edit or delete it. Owners cannot borrow their own books, and a user cannot borrow the same book twice.
@@ -66,6 +66,8 @@ BETTER_AUTH_SECRET=<a long random string>
 BETTER_AUTH_URL=http://localhost:3000
 MONGODB_URI=<your MongoDB connection string>
 NEXT_PUBLIC_IMGBB_KEY=<your imgbb API key>
+GOOGLE_CLIENT_ID=<your Google OAuth client id>
+GOOGLE_CLIENT_SECRET=<your Google OAuth client secret>
 ```
 
 Then start the app:
@@ -90,6 +92,8 @@ npm run build
 | `BETTER_AUTH_URL` | The public URL of this app (no trailing slash). |
 | `MONGODB_URI` | MongoDB connection string. |
 | `NEXT_PUBLIC_IMGBB_KEY` | imgbb API key used for cover image uploads. It is visible in the browser. |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID for Google login. |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret. Keep it private. |
 
 ## How the client and the server work together
 
@@ -113,6 +117,6 @@ npm run build
 
 ## Deployment
 
-- Client: Vercel. Set the four environment variables above (`BETTER_AUTH_URL` must be the Vercel URL).
+- Client: Vercel. Set the six environment variables above (`BETTER_AUTH_URL` must be the Vercel URL).
 - Server: Render. Set `AUTH_JWKS_URL` to `<client URL>/api/auth/jwks`.
 - Database: MongoDB Atlas, with network access that allows the hosts above.
