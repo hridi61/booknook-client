@@ -22,7 +22,7 @@ function Cover({ src, title }: { src?: string; title: string }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
-    return <div className="text-3xl w-12 text-center">📖</div>;
+    return <div className="text-3xl w-12 text-center shrink-0">📖</div>;
   }
 
   return (
@@ -30,7 +30,7 @@ function Cover({ src, title }: { src?: string; title: string }) {
     <img
       src={src}
       alt={`Cover of ${title}`}
-      className="h-16 w-12 rounded object-cover shadow"
+      className="h-16 w-12 shrink-0 rounded object-cover shadow"
       onError={() => setFailed(true)}
     />
   );
@@ -168,12 +168,12 @@ function MyBorrowsContent() {
         ) : (
           <div className="card bg-base-100 shadow-xl">
             <div className="overflow-x-auto">
-              <table className="table">
+              <table className="table min-w-[680px]">
                 <thead>
                   <tr>
                     <th>Book</th>
-                    <th>Borrowed On</th>
-                    <th>Return By</th>
+                    <th className="whitespace-nowrap">Borrowed On</th>
+                    <th className="whitespace-nowrap">Return By</th>
                     <th>Status</th>
                     <th className="text-right">Actions</th>
                   </tr>
@@ -188,7 +188,7 @@ function MyBorrowsContent() {
                     return (
                       <tr key={borrow._id}>
                         <td>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-[180px]">
                             <Cover
                               src={borrow.bookImage}
                               title={borrow.bookTitle}
@@ -199,11 +199,11 @@ function MyBorrowsContent() {
                           </div>
                         </td>
 
-                        <td>
+                        <td className="whitespace-nowrap">
                           {new Date(borrow.borrowedAt).toLocaleDateString()}
                         </td>
 
-                        <td>
+                        <td className="whitespace-nowrap">
                           {borrow.returnDate
                             ? new Date(borrow.returnDate).toLocaleDateString()
                             : "N/A"}
@@ -211,16 +211,18 @@ function MyBorrowsContent() {
 
                         <td>
                           {overdue ? (
-                            <span className="badge badge-error">Overdue</span>
+                            <span className="badge badge-error whitespace-nowrap">
+                              Overdue
+                            </span>
                           ) : (
-                            <span className="badge badge-success badge-soft">
+                            <span className="badge badge-success badge-soft whitespace-nowrap">
                               On time
                             </span>
                           )}
                         </td>
 
                         <td>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2 whitespace-nowrap">
                             <Link
                               href={`/books/${borrow.bookId}`}
                               className="btn btn-outline btn-sm"
