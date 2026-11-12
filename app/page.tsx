@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination, Keyboard } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
 
 interface Book {
   _id: string;
@@ -21,16 +25,28 @@ const slides = [
     title: "Add a book, borrow a book, return a book",
     subtitle: "Your small online library, open all day.",
     button: "Browse Books",
+    href: "/books",
+    icon: "📚",
+    bg: "bg-blue-100",
+    heading: "text-blue-800",
   },
   {
     title: "Discover Your Next Favorite Book",
     subtitle: "Explore stories, knowledge and adventures.",
     button: "Explore Collection",
+    href: "/books",
+    icon: "🔍",
+    bg: "bg-violet-100",
+    heading: "text-violet-800",
   },
   {
     title: "Share Books With Everyone",
     subtitle: "Add your books and connect with readers.",
-    button: "Start Reading",
+    button: "Add a Book",
+    href: "/add-book",
+    icon: "🤝",
+    bg: "bg-emerald-100",
+    heading: "text-emerald-800",
   },
 ];
 
@@ -48,7 +64,7 @@ const steps = [
     icon: "📚",
     title: "Borrow it",
     text: "Borrow your favorite book with ease.",
-    button: "Borrow a Book",
+    button: "Choose a Book",
     href: "/books",
   },
   {
@@ -78,11 +94,76 @@ function BookCover({ src, title }: { src?: string; title: string }) {
   );
 }
 
+function HeroSlide({ slide }: { slide: (typeof slides)[number] }) {
+  return (
+    <div
+      className={`${slide.bg} text-center px-6 pt-16 pb-20 md:pt-20 md:pb-24`}
+    >
+      <div className="max-w-4xl mx-auto">
+        <div className="text-5xl mb-4">{slide.icon}</div>
+
+        <h1 className={`text-3xl md:text-5xl font-bold ${slide.heading}`}>
+          {slide.title}
+        </h1>
+
+        <p className="text-lg md:text-xl text-gray-600 mt-4">
+          {slide.subtitle}
+        </p>
+
+        <Link href={slide.href} className="btn btn-primary mt-6">
+          {slide.button}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Swiper is only mounted in the browser. Before that (build and server render)
+// the first slide is shown as plain static content, so the page does not jump.
+function HeroCarousel() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <HeroSlide slide={slides[0]} />;
+  }
+
+  return (
+    <Swiper
+      modules={[Autoplay, Pagination, Keyboard]}
+      slidesPerView={1}
+      loop
+      keyboard={{ enabled: true }}
+      autoplay={{
+        delay: 4000,
+        disableOnInteraction: false,
+        pauseOnMouseEnter: true,
+      }}
+      pagination={{ clickable: true }}
+      style={
+        {
+          "--swiper-pagination-color": "#2563eb",
+          "--swiper-pagination-bullet-inactive-color": "#6b7280",
+          "--swiper-pagination-bullet-inactive-opacity": "0.5",
+        } as React.CSSProperties
+      }
+    >
+      {slides.map((slide) => (
+        <SwiperSlide key={slide.title}>
+          <HeroSlide slide={slide} />
+        </SwiperSlide>
+      ))}
+    </Swiper>
+  );
+}
+
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeSlide, setActiveSlide] = useState(0);
 
   // Fetch the 6 newest books (public route, no token needed)
   useEffect(() => {
@@ -108,38 +189,11 @@ export default function Home() {
     fetchBooks();
   }, []);
 
-  const currentSlide = slides[activeSlide];
-
   return (
     <main className="min-h-screen bg-base-100">
-      {/* Hero Section */}
-      <section className="bg-blue-100 text-center px-6 py-16 md:py-20">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-5xl font-bold text-blue-800">
-            {currentSlide.title}
-          </h1>
-
-          <p className="text-lg md:text-xl text-gray-600 mt-4">
-            {currentSlide.subtitle}
-          </p>
-
-          <Link href="/books" className="btn btn-primary mt-6">
-            {currentSlide.button}
-          </Link>
-
-          <div className="flex justify-center gap-3 mt-5">
-            {slides.map((slide, index) => (
-              <button
-                key={slide.title}
-                onClick={() => setActiveSlide(index)}
-                aria-label={`Show slide ${index + 1}`}
-                className={`w-3 h-3 rounded-full ${
-                  activeSlide === index ? "bg-blue-600" : "bg-gray-400"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+      {/* Hero carousel (Swiper) */}
+      <section>
+        <HeroCarousel />
       </section>
 
       {/* New Arrivals */}
