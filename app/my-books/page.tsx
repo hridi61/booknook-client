@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
+import PrivateRoute from "@/app/components/PrivateRoute";
 
 interface Book {
   _id: string;
@@ -18,11 +19,11 @@ interface Book {
 
 const API_URL = "https://booknook-server-n74t.onrender.com";
 
-function BookCover({ src, title }: { src?: string; title: string }) {
+function Cover({ src, title }: { src?: string; title: string }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
-    return <div className="text-5xl text-center py-10">📖</div>;
+    return <div className="text-3xl w-12 text-center shrink-0">📖</div>;
   }
 
   return (
@@ -30,19 +31,20 @@ function BookCover({ src, title }: { src?: string; title: string }) {
     <img
       src={src}
       alt={`Cover of ${title}`}
-      className="h-48 w-full object-cover"
+      className="h-16 w-12 shrink-0 rounded object-cover shadow"
       onError={() => setFailed(true)}
     />
   );
 }
 
-export default function MyBooksPage() {
+function MyBooksContent() {
   const { data: session, isPending } = authClient.useSession();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Book | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchMyBooks = async () => {
@@ -82,15 +84,12 @@ export default function MyBooksPage() {
     }
   }, [isPending, session?.user?.email]);
 
-  const handleDelete = async (bookId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this book?"
-    );
-
-    if (!confirmed) return;
+  // Confirm delete (called from the modal)
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      setDeletingId(bookId);
+      setDeleting(true);
 
       const { data, error: tokenError } = await authClient.token();
 
@@ -98,7 +97,7 @@ export default function MyBooksPage() {
         throw new Error("Please login first.");
       }
 
-      const response = await fetch(`${API_URL}/books/${bookId}`, {
+      const response = await fetch(`${API_URL}/books/${deleteTarget._id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${data.token}`,
@@ -112,14 +111,16 @@ export default function MyBooksPage() {
       }
 
       setBooks((previousBooks) =>
-        previousBooks.filter((book) => book._id !== bookId)
+        previousBooks.filter((book) => book._id !== deleteTarget._id)
       );
 
       toast.success("Book deleted successfully!");
+      setDeleteTarget(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to delete book.");
+      setDeleteTarget(null);
     } finally {
-      setDeletingId("");
+      setDeleting(false);
     }
   };
 
@@ -128,6 +129,9 @@ export default function MyBooksPage() {
       <div className="text-center py-20">
         <span className="loading loading-spinner loading-lg text-primary" />
         <p className="mt-3">Loading your books...</p>
+        <p className="mt-1 text-sm text-base-content/60">
+          The first load can take up to a minute while the server wakes up.
+        </p>
       </div>
     );
   }
@@ -173,66 +177,124 @@ export default function MyBooksPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {books.map((book) => (
-              <div
-                key={book._id}
-                className="card bg-base-100 shadow-xl overflow-hidden"
-              >
-                <figure>
-                  <BookCover src={book.coverImage} title={book.title} />
-                </figure>
+          <div className="card bg-base-100 shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="table min-w-[760px]">
+                <thead>
+                  <tr>
+                    <th>Book</th>
+                    <th>Category</th>
+                    <th className="whitespace-nowrap">Available Copies</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
 
-                <div className="card-body">
-                  <h2 className="card-title justify-center text-primary">
-                    {book.title}
-                  </h2>
+                <tbody>
+                  {books.map((book) => (
+                    <tr key={book._id}>
+                      <td>
+                        <div className="flex items-center gap-3 min-w-[200px]">
+                          <Cover src={book.coverImage} title={book.title} />
+                          <div>
+                            <p className="font-semibold text-primary">
+                              {book.title}
+                            </p>
+                            {book.author && (
+                              <p className="text-sm text-base-content/70">
+                                by {book.author}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                  {book.author && (
-                    <p className="text-center text-base-content/70">
-                      by {book.author}
-                    </p>
-                  )}
+                      <td>
+                        <span className="badge badge-primary badge-outline whitespace-nowrap">
+                          {book.category}
+                        </span>
+                      </td>
 
-                  <p>
-                    <strong>Category:</strong> {book.category}
-                  </p>
+                      <td className="whitespace-nowrap">
+                        {book.copies}
+                        {typeof book.totalCopies === "number" &&
+                          ` of ${book.totalCopies}`}
+                      </td>
 
-                  <p>
-                    <strong>Available Copies:</strong> {book.copies}
-                    {typeof book.totalCopies === "number" &&
-                      ` of ${book.totalCopies}`}
-                  </p>
+                      <td>
+                        <div className="flex justify-end gap-2 whitespace-nowrap">
+                          <Link
+                            href={`/books/${book._id}`}
+                            className="btn btn-primary btn-sm"
+                          >
+                            View
+                          </Link>
 
-                  <div className="card-actions justify-center mt-4">
-                    <Link
-                      href={`/books/${book._id}`}
-                      className="btn btn-primary"
-                    >
-                      View Details
-                    </Link>
+                          <Link
+                            href={`/books/${book._id}/edit`}
+                            className="btn btn-warning btn-sm"
+                          >
+                            Edit
+                          </Link>
 
-                    <Link
-                      href={`/books/${book._id}/edit`}
-                      className="btn btn-warning"
-                    >
-                      Edit Book
-                    </Link>
-
-                    <button
-                      onClick={() => handleDelete(book._id)}
-                      disabled={deletingId === book._id}
-                      className="btn btn-error"
-                    >
-                      {deletingId === book._id ? "Deleting..." : "Delete Book"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                          <button
+                            className="btn btn-error btn-sm"
+                            onClick={() => setDeleteTarget(book)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <dialog className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-xl text-error">Delete this book?</h3>
+
+            <p className="mt-3">
+              <strong>{deleteTarget.title}</strong> and its borrow records will
+              be removed. This cannot be undone.
+            </p>
+
+            <div className="modal-action">
+              <button
+                className="btn btn-outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+        </dialog>
+      )}
     </main>
+  );
+}
+
+export default function MyBooksPage() {
+  return (
+    <PrivateRoute>
+      <MyBooksContent />
+    </PrivateRoute>
   );
 }
