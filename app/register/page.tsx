@@ -1,23 +1,47 @@
-
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { authClient } from "@/lib/auth-client";
+
+function validatePassword(password: string) {
+  if (password.length < 6) {
+    return "Password must be at least 6 characters long.";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must have at least one uppercase letter.";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must have at least one lowercase letter.";
+  }
+  return "";
+}
 
 export default function RegisterPage() {
   const router = useRouter();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+
+    // Password rules: uppercase, lowercase and at least 6 characters
+    const message = validatePassword(password);
+    if (message) {
+      setPasswordError(message);
+      toast.error(message);
+      return;
+    }
+
+    setPasswordError("");
     setLoading(true);
 
     try {
@@ -25,24 +49,46 @@ export default function RegisterPage() {
         name,
         email,
         password,
+        ...(photoUrl.trim() ? { image: photoUrl.trim() } : {}),
       });
 
       if (error) {
-        setError(error.message || "Registration failed");
+        toast.error(error.message || "Registration failed");
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      // After registering, the user goes to the Login page
+      try {
+        await authClient.signOut();
+      } catch {
+        // ignore: the user may not have been signed in automatically
+      }
+
+      toast.success("Account created. Please login.");
+      router.push("/login");
     } catch {
-      setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch {
+      toast.error("Google login failed. Please try again.");
+      setGoogleLoading(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-base-200 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-10">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
           <h1 className="text-3xl font-bold text-center">Create Account</h1>
@@ -81,22 +127,43 @@ export default function RegisterPage() {
 
             <div>
               <label className="label">
+                <span className="label-text">Photo URL</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://example.com/photo.jpg"
+                className="input input-bordered w-full"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="label">
                 <span className="label-text">Password</span>
               </label>
               <input
                 type="password"
                 placeholder="Enter password"
-                className="input input-bordered w-full"
+                className={`input input-bordered w-full ${
+                  passwordError ? "input-error" : ""
+                }`}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError("");
+                }}
                 required
-                minLength={8}
               />
+              {passwordError ? (
+                <p className="text-error text-sm mt-1">{passwordError}</p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  At least 6 characters, with one uppercase and one lowercase
+                  letter.
+                </p>
+              )}
             </div>
-
-            {error && (
-              <p className="text-error text-sm">{error}</p>
-            )}
 
             <button
               type="submit"
@@ -106,6 +173,17 @@ export default function RegisterPage() {
               {loading ? "Creating Account..." : "Register"}
             </button>
           </form>
+
+          <div className="divider">OR</div>
+
+          <button
+            type="button"
+            onClick={handleGoogle}
+            className="btn btn-outline w-full"
+            disabled={googleLoading}
+          >
+            {googleLoading ? "Redirecting..." : "Continue with Google"}
+          </button>
 
           <p className="text-center mt-4">
             Already have an account?{" "}
