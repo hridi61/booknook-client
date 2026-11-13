@@ -131,11 +131,14 @@ export default function RegisterPage() {
               </label>
               <input
                 type="url"
-                placeholder="https://example.com/photo.jpg"
+                placeholder="https://i.pravatar.cc/150?img=12"
                 className="input input-bordered w-full"
                 value={photoUrl}
                 onChange={(e) => setPhotoUrl(e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Optional. Paste a link to any image, or leave it empty.
+              </p>
             </div>
 
             <div>
