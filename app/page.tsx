@@ -33,7 +33,7 @@ const slides = [
   {
     title: "Discover Your Next Favorite Book",
     subtitle: "Explore stories, knowledge and adventures.",
-    button: "Explore Collection",
+    button: "Browse Books",
     href: "/books",
     icon: "🔍",
     bg: "bg-violet-100",
@@ -42,8 +42,8 @@ const slides = [
   {
     title: "Share Books With Everyone",
     subtitle: "Add your books and connect with readers.",
-    button: "Add a Book",
-    href: "/add-book",
+    button: "Browse Books",
+    href: "/books",
     icon: "🤝",
     bg: "bg-emerald-100",
     heading: "text-emerald-800",
@@ -102,7 +102,9 @@ function HeroSlide({ slide }: { slide: (typeof slides)[number] }) {
       <div className="max-w-4xl mx-auto">
         <div className="text-5xl mb-4">{slide.icon}</div>
 
-        <h1 className={`text-3xl md:text-5xl font-bold ${slide.heading}`}>
+        <h1
+          className={`text-3xl md:text-5xl font-bold text-balance ${slide.heading}`}
+        >
           {slide.title}
         </h1>
 
@@ -302,6 +304,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-      </main>
+    </main>
   );
 }
